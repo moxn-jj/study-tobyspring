@@ -4,6 +4,7 @@ import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactor
 import org.springframework.boot.web.server.WebServer;
 import org.springframework.boot.web.servlet.ServletContextInitializer;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
@@ -41,21 +42,46 @@ public class HellobootApplication {
         // 해당 인터메이스는 구현해야하는 메소드가 1개인 Functional Interface 임
         // => 즉, Lambda 식으로 대체 가능 함!
         WebServer webServer = serverFactory.getWebServer(servletContext -> {
+
+            // 5. 프론트 컨트롤러의 개별 로직 분리하기
+            HelloController helloController = new HelloController();
+
             // 서블릿 등록하기 : 1. 서블릿 이름, 2. 서블릿 클래스 정보나 서블릿 타입의 오브젝트
-            servletContext.addServlet("hello", new HttpServlet() { // 여기서도 두번째 파라미터에 익명 클래스로 전달
+            servletContext.addServlet("frontcontroller", new HttpServlet() { // 여기서도 두번째 파라미터에 익명 클래스로 전달
                 // 요청을 가져오고 응답을 내보낼 수 있는 메소드
                 @Override
                 protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-                    // 요청에서 값 가져오기
-                    String name = req.getParameter("name"); // 쿼리스트링 파라미터 받기
 
-                    // 응답 만들기 : 응답의 3가지 요소, 여기서 상수는 최대한 spring이나 spring boot에 정의되어있는 enum을 사용하는 것이 좋음
-                    resp.setStatus(HttpStatus.OK.value()); // 응답 상태
-                    resp.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE); // body의 type
-                    // getWriter는 오브젝트를 문자열 응답으로 만들 때 편리함
-                    resp.getWriter().println("Hello " + name); // body 내용
+                    // 인증, 보안, 다국어 처리, 각종 공통 기능 처리 로직이 들어갈 자리!
+
+                    // 개별 처리
+                    if(req.getRequestURI().equals("/hello") && req.getMethod().equals(HttpMethod.GET.name())){
+
+                        // 요청에서 값 가져오기
+                        String name = req.getParameter("name"); // 쿼리스트링 파라미터 받기
+
+                        // 5. 프론트 컨트롤러의 개별 로직 분리하기
+                        // 실제 요청을 처리하는 동안 일어난 중요한 일 두가지 : 매핑, 바인딩
+                        // 1) 매핑 : 웹 요청에 들어있는 정보를 활용해서 어떤 로직을 수행하는 코드를 결정하는 것
+                        // 2) 바인딩 : helloController는 웹 요청과 응답을 직접 다루지 않음
+                        // => 즉, 분리함 (hello 메소드는 평범한 데이터 타입인 name만 받음)
+                        String ret = helloController.hello(name);
+
+                        // 응답 만들기 : 응답의 3가지 요소, 여기서 상수는 최대한 spring이나 spring boot에 정의되어있는 enum을 사용하는 것이 좋음
+                        resp.setStatus(HttpStatus.OK.value()); // 응답 상태
+                        resp.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE); // body의 type
+                        // getWriter는 오브젝트를 문자열 응답으로 만들 때 편리함
+                        resp.getWriter().println(ret); // body 내용
+                    }else if(req.getRequestURI().equals("/user")){
+                        //
+                    }else{
+                        resp.setStatus(HttpStatus.NOT_FOUND.value()); // 404
+                    }
                 }
-            }).addMapping("/hello"); // 서블릿을 하나 만들 때 매핑을 추가해야 함
+
+            // 4. 프론트 컨트롤러 만들기 : 모든 요청을 받음
+            }).addMapping("/*"); // 서블릿을 하나 만들 때 매핑을 추가해야 함
+
         });// servlet container를 만드는 생성 함수
         webServer.start(); // Tomcat Servlet Container가 동작!
         // http -v :8080 요청하면 404 error 리턴함 => 즉, 톰캣이 진짜 떠 있다!
