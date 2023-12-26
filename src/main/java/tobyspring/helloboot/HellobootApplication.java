@@ -3,6 +3,7 @@ package tobyspring.helloboot;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServer;
 import org.springframework.boot.web.servlet.ServletContextInitializer;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,16 @@ import java.io.IOException;
 public class HellobootApplication {
 
     public static void main(String[] args) {
+
+        // 6.
+        // ApplicaitonContext :
+        // 어떤 빈이 들어갈 것인가, 리소스에 접근하는 방법, 이벤트를 전달하고 구독하는 방법 등
+        // 애플리케이션이라면 필요한 많은 기능을 담당하고 있음
+        GenericApplicationContext applicationContext = new GenericApplicationContext(); // applicationContext 중 1개 (구현하기 쉽게 만들어 놓은)
+        // spring Container는 오브젝트를 직접 만들어서 넣어주는 것도 가능하지만
+        // 일반적으로 어떤 클래스를 이용해서 빈을 만들지 meta 정보를 넣어주는 방식으로 구성
+        applicationContext.registerBean(HelloController.class); // bean 등록
+        applicationContext.refresh(); // 가지고 있는 구성 정보를 이용해서 컨테이너를 초기화
 
         // 0. 이 코드 없이 스프링 부트랑 똑같이 동작 시켜보자
         // SpringApplication.run(HellobootApplication.class, args);
@@ -44,7 +55,8 @@ public class HellobootApplication {
         WebServer webServer = serverFactory.getWebServer(servletContext -> {
 
             // 5. 프론트 컨트롤러의 개별 로직 분리하기
-            HelloController helloController = new HelloController();
+            // 6. 실제 비지니스 로직은 spring container에 넣는 방식으로 수정하기 위하여 주석처리
+//            HelloController helloController = new HelloController();
 
             // 서블릿 등록하기 : 1. 서블릿 이름, 2. 서블릿 클래스 정보나 서블릿 타입의 오브젝트
             servletContext.addServlet("frontcontroller", new HttpServlet() { // 여기서도 두번째 파라미터에 익명 클래스로 전달
@@ -60,6 +72,9 @@ public class HellobootApplication {
                         // 요청에서 값 가져오기
                         String name = req.getParameter("name"); // 쿼리스트링 파라미터 받기
 
+                        // 6.applicationContext를 통하여 spring container가 가지고 있는 오브젝트를 가져올 수 있음
+                        HelloController helloController = applicationContext.getBean(HelloController.class);
+
                         // 5. 프론트 컨트롤러의 개별 로직 분리하기
                         // 실제 요청을 처리하는 동안 일어난 중요한 일 두가지 : 매핑, 바인딩
                         // 1) 매핑 : 웹 요청에 들어있는 정보를 활용해서 어떤 로직을 수행하는 코드를 결정하는 것
@@ -68,12 +83,11 @@ public class HellobootApplication {
                         String ret = helloController.hello(name);
 
                         // 응답 만들기 : 응답의 3가지 요소, 여기서 상수는 최대한 spring이나 spring boot에 정의되어있는 enum을 사용하는 것이 좋음
-                        resp.setStatus(HttpStatus.OK.value()); // 응답 상태
-                        resp.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE); // body의 type
+//                        resp.setStatus(HttpStatus.OK.value()); // 응답 상태 : 200은 기본값으로 생략 가능
+//                        resp.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE); // body의 type
+                        resp.setContentType(MediaType.TEXT_PLAIN_VALUE); // 위와 동일한 코드
                         // getWriter는 오브젝트를 문자열 응답으로 만들 때 편리함
                         resp.getWriter().println(ret); // body 내용
-                    }else if(req.getRequestURI().equals("/user")){
-                        //
                     }else{
                         resp.setStatus(HttpStatus.NOT_FOUND.value()); // 404
                     }
