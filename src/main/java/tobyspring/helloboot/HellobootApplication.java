@@ -30,6 +30,11 @@ public class HellobootApplication {
         // spring Container는 오브젝트를 직접 만들어서 넣어주는 것도 가능하지만
         // 일반적으로 어떤 클래스를 이용해서 빈을 만들지 meta 정보를 넣어주는 방식으로 구성
         applicationContext.registerBean(HelloController.class); // bean 등록
+        // 8. 생성자 주입하는 방식으로 변경했기 때문에 service도 빈으로 등록
+        // 빈으로 등록한다는 것은 => 컨테이너가 그 오브젝트를 만들고
+        // 필요하면 다른 오브젝트를 만들 때 생성자 등으로 주입해서 의존관계를 런타임에 맺어줌
+        // applicationContext.registerBean(HelloService.class); // 이렇게 인터페이스만 넣으면 안됨!
+        applicationContext.registerBean(SimpleHelloService.class); // bean 등록
         applicationContext.refresh(); // 가지고 있는 구성 정보를 이용해서 컨테이너를 초기화
 
         // 0. 이 코드 없이 스프링 부트랑 똑같이 동작 시켜보자
