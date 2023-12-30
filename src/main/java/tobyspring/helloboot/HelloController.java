@@ -1,8 +1,16 @@
 package tobyspring.helloboot;
 
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
 import java.util.Objects;
 
 /*@RestController*/
+// 9. Dispatcher Servlet가 매핑정보를 만들 때 클래스 레벨에 있는 정보를 먼저
+// 참고해서 메소드 레벨에 붙어 있는 정보를 추가하기 때문에
+// 해당 어노테이션도 붙여줌
+@RequestMapping
 public class HelloController {
 
     // 8. 주입받은 오브젝트를 저장할 변수
@@ -34,6 +42,19 @@ public class HelloController {
         return "Hello " + name;
     }*/
 
+    // 9. 서블릿이 아닌 컨트롤러에 매핑 추가
+    // DispatcherServlet은 ServletContainer인 Application Context를 생성자로 받았기 때문에
+    // DispatcherServlet은 빈을 다 뒤지는 작업을 해서, 웹 요청을 처리할 수 있는 매핑 정보를
+    // 가지고 있는 클래스를 찾아서 요청 정보를 추출해서 매핑 테이블을 만듦
+    // 이후 웹 요청이 들어오면 그걸 참고해서 이걸 담당할 빈 오브젝트와 메소드를 확인
+    // 근데, 메소드 레벨에만 달면 안되고 클래스 레벨에도 달아줘야함
+    @GetMapping("/hello")
+    // 9. 해당 어노테이션이 없으면 Dispatcher Servlet은 view를 리턴해줘야한다고 생각함
+    // 따라서 return된 이름의 파일을 찾는데 없으니 404가 뜸
+    // ResponseBody 어노테이션을 붙여줌으로써 web응답에 body에 리턴값을 넣어서
+    // 텍스트플레인으로 전달하게 만들어짐
+    // 클래스 레벨에 RestController를 붙여주면 해당 어노테이션을 생략해도 됨
+    @ResponseBody
     public String hello(String name){
 
         // 7. service를 사용하도록 전환

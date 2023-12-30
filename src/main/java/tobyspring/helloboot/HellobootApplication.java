@@ -8,6 +8,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.context.support.GenericWebApplicationContext;
+import org.springframework.web.servlet.DispatcherServlet;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -26,7 +28,9 @@ public class HellobootApplication {
         // ApplicaitonContext :
         // 어떤 빈이 들어갈 것인가, 리소스에 접근하는 방법, 이벤트를 전달하고 구독하는 방법 등
         // 애플리케이션이라면 필요한 많은 기능을 담당하고 있음
-        GenericApplicationContext applicationContext = new GenericApplicationContext(); // applicationContext 중 1개 (구현하기 쉽게 만들어 놓은)
+//        GenericApplicationContext applicationContext = new GenericApplicationContext(); // applicationContext 중 1개 (구현하기 쉽게 만들어 놓은)
+        // 9. dispatcherServlet이 사용할 수 있는 타입으로 변경 : 웹 환경에서 사용하도록 발전 시킨 타입임
+        GenericWebApplicationContext applicationContext = new GenericWebApplicationContext();
         // spring Container는 오브젝트를 직접 만들어서 넣어주는 것도 가능하지만
         // 일반적으로 어떤 클래스를 이용해서 빈을 만들지 meta 정보를 넣어주는 방식으로 구성
         applicationContext.registerBean(HelloController.class); // bean 등록
@@ -63,7 +67,12 @@ public class HellobootApplication {
             // 6. 실제 비지니스 로직은 spring container에 넣는 방식으로 수정하기 위하여 주석처리
 //            HelloController helloController = new HelloController();
 
+
             // 서블릿 등록하기 : 1. 서블릿 이름, 2. 서블릿 클래스 정보나 서블릿 타입의 오브젝트
+            // 9. 해당 코드는 서블릿을 등록하는 건데,
+            // 이 때 애플리케이션 로직과 너무 긴밀하게 연결되어있는게 문제 (매핑, 바인딩)
+            // 이를 해결하기 위해서 DispatcherServlet이라는 것을 이용해서 다시 등록해줄  것
+            /*
             servletContext.addServlet("frontcontroller", new HttpServlet() { // 여기서도 두번째 파라미터에 익명 클래스로 전달
                 // 요청을 가져오고 응답을 내보낼 수 있는 메소드
                 @Override
@@ -100,6 +109,14 @@ public class HellobootApplication {
 
             // 4. 프론트 컨트롤러 만들기 : 모든 요청을 받음
             }).addMapping("/*"); // 서블릿을 하나 만들 때 매핑을 추가해야 함
+            */
+
+            // 9. dispatcherServlet을 사용하는 방식으로 변경 : 로직 분리
+            // dispatcherServlet은 프론트 컨트롤러의 많은 기능을 수행해주는 Servlet임
+            // 매핑 정보는 서블릿에 명시하지 않고 controller에 직접 넣은 방식으로 변경함
+            servletContext.addServlet("dispatcherServlet",
+                new DispatcherServlet(applicationContext)
+            ).addMapping("/*");
 
         });// servlet container를 만드는 생성 함수
         webServer.start(); // Tomcat Servlet Container가 동작!
